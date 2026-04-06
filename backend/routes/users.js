@@ -28,7 +28,6 @@ router.post("/",   createValidation, createUser);
 router.put("/:id", updateValidation, updateUser);
 router.delete("/:id", deleteUser);
 
-// Super admin only — transfer super admin to another admin
 router.post("/:id/transfer-superadmin", transferSuperAdmin);
 
 module.exports = router;

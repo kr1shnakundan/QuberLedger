@@ -1,28 +1,24 @@
 const { validationResult } = require("express-validator");
 const FinancialRecord = require("../models/FinancialRecord");
 
-// ─── Helper ────────────────────────────────────────────────────────────────────
 const buildFilter = (query) => {
   const filter = {};
 
   if (query.type) filter.type = query.type;
   if (query.category) filter.category = query.category;
 
-  // Date range
   if (query.startDate || query.endDate) {
     filter.date = {};
     if (query.startDate) filter.date.$gte = new Date(query.startDate);
     if (query.endDate)   filter.date.$lte = new Date(query.endDate);
   }
 
-  // Amount range
   if (query.minAmount || query.maxAmount) {
     filter.amount = {};
     if (query.minAmount) filter.amount.$gte = parseFloat(query.minAmount);
     if (query.maxAmount) filter.amount.$lte = parseFloat(query.maxAmount);
   }
 
-  // Text search in description
   if (query.search) {
     filter.description = { $regex: query.search, $options: "i" };
   }
@@ -30,9 +26,7 @@ const buildFilter = (query) => {
   return filter;
 };
 
-// @desc    Get all records (with filtering + pagination)
-// @route   GET /api/records
-// @access  Viewer, Analyst, Admin
+//Get all records (with filtering + pagination)n
 const getRecords = async (req, res, next) => {
   try {
     const page  = parseInt(req.query.page)  || 1;
@@ -61,9 +55,7 @@ const getRecords = async (req, res, next) => {
   }
 };
 
-// @desc    Get single record
-// @route   GET /api/records/:id
-// @access  Viewer, Analyst, Admin
+// Get single record
 const getRecord = async (req, res, next) => {
   try {
     const record = await FinancialRecord.findById(req.params.id).populate("createdBy", "name email");
@@ -74,9 +66,7 @@ const getRecord = async (req, res, next) => {
   }
 };
 
-// @desc    Create a new financial record
-// @route   POST /api/records
-// @access  Admin only
+// Create a new financial record
 const createRecord = async (req, res, next) => {
   try {
     const errors = validationResult(req);
@@ -100,9 +90,7 @@ const createRecord = async (req, res, next) => {
   }
 };
 
-// @desc    Update a financial record
-// @route   PUT /api/records/:id
-// @access  Admin only
+// Update a financial record
 const updateRecord = async (req, res, next) => {
   try {
     const errors = validationResult(req);
@@ -124,12 +112,9 @@ const updateRecord = async (req, res, next) => {
   }
 };
 
-// @desc    Soft delete a record
-// @route   DELETE /api/records/:id
-// @access  Admin only
+//  Soft delete a record
 const deleteRecord = async (req, res, next) => {
   try {
-    // findByIdAndUpdate bypasses the pre-find middleware so we can update isDeleted
     const record = await FinancialRecord.findByIdAndUpdate(
       req.params.id,
       { isDeleted: true },

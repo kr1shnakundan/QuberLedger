@@ -1,27 +1,18 @@
 const { validationResult } = require("express-validator");
 const User = require("../models/User");
 
-// ─── Permission helpers ────────────────────────────────────────────────────────
 
-// Can the actor edit the target user?
 const canEdit = (actor, target) => {
-  // Nobody can ever edit the super admin (except super admin editing themselves
-  // for non-role/non-superadmin fields — handled separately)
   if (target.isSuperAdmin && actor._id.toString() !== target._id.toString()) {
     return { ok: false, message: "The Super Admin's role and status cannot be changed by anyone else." };
   }
-  // Regular admin cannot edit another admin
   if (!actor.isSuperAdmin && actor.role === "admin" && target.role === "admin") {
     return { ok: false, message: "Admins cannot edit other admins. Only the Super Admin can do that." };
   }
   return { ok: true };
 };
 
-// ─── Controllers ──────────────────────────────────────────────────────────────
-
-// @desc    Get all users (with pagination + filters)
-// @route   GET /api/users
-// @access  Admin, Super Admin
+//Get all users (with pagination + filters)
 const getUsers = async (req, res, next) => {
   try {
     const page  = parseInt(req.query.page)  || 1;
@@ -53,9 +44,7 @@ const getUsers = async (req, res, next) => {
   }
 };
 
-// @desc    Get a single user
-// @route   GET /api/users/:id
-// @access  Admin
+// Get a single user
 const getUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
@@ -66,9 +55,7 @@ const getUser = async (req, res, next) => {
   }
 };
 
-// @desc    Create a new user (admin creates with any role)
-// @route   POST /api/users
-// @access  Admin
+//  Create a new user (admin creates with any role)
 const createUser = async (req, res, next) => {
   try {
     const errors = validationResult(req);
@@ -76,7 +63,6 @@ const createUser = async (req, res, next) => {
 
     const { name, email, password, role } = req.body;
 
-    // Only super admin can create another admin
     if (role === "admin" && !req.user.isSuperAdmin) {
       return res.status(403).json({
         success: false,
@@ -94,9 +80,7 @@ const createUser = async (req, res, next) => {
   }
 };
 
-// @desc    Update user role or status
-// @route   PUT /api/users/:id
-// @access  Admin (with restrictions), Super Admin (unrestricted)
+// Update user role or status
 const updateUser = async (req, res, next) => {
   try {
     const errors = validationResult(req);
@@ -105,7 +89,6 @@ const updateUser = async (req, res, next) => {
     const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ success: false, message: "User not found." });
 
-    // Self-edit guard — nobody demotes themselves
     if (req.params.id === req.user._id.toString()) {
       if (req.body.role && req.body.role !== req.user.role) {
         return res.status(400).json({ success: false, message: "You cannot change your own role." });
@@ -127,7 +110,7 @@ const updateUser = async (req, res, next) => {
       });
     }
 
-    // If target is being demoted from admin → must be done by super admin
+    // If target is being demoted from admin ,it must be done by super admin
     if (target.role === "admin" && req.body.role && req.body.role !== "admin" && !req.user.isSuperAdmin) {
       return res.status(403).json({
         success: false,
@@ -150,12 +133,9 @@ const updateUser = async (req, res, next) => {
   }
 };
 
-// @desc    Transfer super admin status to another admin
-// @route   POST /api/users/:id/transfer-superadmin
-// @access  Super Admin only
+//transfer status
 const transferSuperAdmin = async (req, res, next) => {
   try {
-    // Must be super admin to call this
     if (!req.user.isSuperAdmin) {
       return res.status(403).json({
         success: false,
@@ -173,7 +153,6 @@ const transferSuperAdmin = async (req, res, next) => {
     const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ success: false, message: "User not found." });
 
-    // Target must already be an admin
     if (target.role !== "admin") {
       return res.status(400).json({
         success: false,
@@ -188,9 +167,8 @@ const transferSuperAdmin = async (req, res, next) => {
       });
     }
 
-    // Atomic transfer: strip from current super admin, assign to target
-    // Using Promise.all but with findByIdAndUpdate (bypasses pre-save unique check)
-    // We manually ensure atomicity by doing it in sequence
+    // strip from current super admin, assign to target
+
     await User.findByIdAndUpdate(req.user._id, { isSuperAdmin: false });
     await User.findByIdAndUpdate(target._id,   { isSuperAdmin: true  });
 
@@ -200,34 +178,27 @@ const transferSuperAdmin = async (req, res, next) => {
       data: { previousSuperAdmin: req.user._id, newSuperAdmin: target._id },
     });
   } catch (err) {
-    // Rollback: if second update failed, restore super admin to original
     await User.findByIdAndUpdate(req.user._id, { isSuperAdmin: true }).catch(() => {});
     next(err);
   }
 };
 
-// @desc    Delete a user (hard delete)
-// @route   DELETE /api/users/:id
-// @access  Admin (non-admins), Super Admin (anyone)
+// Delete a user (hard delete)
 const deleteUser = async (req, res, next) => {
   try {
     const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ success: false, message: "User not found." });
 
-    // Cannot delete yourself
     if (req.params.id === req.user._id.toString()) {
       return res.status(400).json({ success: false, message: "You cannot delete your own account." });
     }
 
-    // Cannot delete the super admin
     if (target.isSuperAdmin) {
       return res.status(403).json({
         success: false,
         message: "The Super Admin account cannot be deleted. Transfer the role first.",
       });
     }
-
-    // Regular admin cannot delete another admin
     const check = canEdit(req.user, target);
     if (!check.ok) return res.status(403).json({ success: false, message: check.message });
 

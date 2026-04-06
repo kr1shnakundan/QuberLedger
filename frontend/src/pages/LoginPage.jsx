@@ -4,13 +4,12 @@ import { useNavigate, Link } from "react-router-dom";
 import { loginUser, clearError } from "../store/authSlice.js";
 import { useTheme } from "../hooks/useTheme.js";
 import logo from "../assets/logo-alt.png";
-require("dotenv").config();
 
 
 const DEMO = {
-  admin:   { email: "admin2@finance.com",   password: process.env.REACT_APP_ADMIN_PASS   },
-  analyst: { email: "analyst@finance.com", password: process.env.REACT_APP_ANALYST_PASS },
-  viewer:  { email: "viewer@finance.com",  password: process.env.REACT_APP_VIEWER_PASS  },
+  admin:   { email: "admin2@finance.com",   password: import.meta.env.REACT_APP_ADMIN_PASS   },
+  analyst: { email: "analyst@finance.com", password: import.meta.env.REACT_APP_ANALYST_PASS },
+  viewer:  { email: "viewer@finance.com",  password: import.meta.env.REACT_APP_VIEWER_PASS  },
 };
 
 export default function LoginPage() {
@@ -113,6 +112,7 @@ export default function LoginPage() {
         </div>
 
         {/* ── Demo accounts ── */}
+        {/* to remove this demo account _remove it's email and password from the env file in frontend and all it's credentials */}
         <div className={`mt-4 rounded-xl border p-4 ${isDark
           ? "bg-[#16161e] border-[#22222e]"
           : "bg-white border-[#ddd9cf]"}`}>

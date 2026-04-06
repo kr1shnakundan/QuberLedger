@@ -28,7 +28,7 @@ router.post("/login", [
 
 router.get("/me", protect, getMe);
 
-// Profile update — name + image (multipart handled by express-fileupload middleware)
+// Profile update of name and image
 router.put("/profile", protect, [
   body("name").optional().trim().isLength({ min: 2, max: 50 }).withMessage("Name must be 2–50 characters."),
 ], updateProfile);

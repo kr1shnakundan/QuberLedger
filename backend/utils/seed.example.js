@@ -34,7 +34,6 @@ const seed = async () => {
     await FinancialRecord.deleteMany({});
     console.log("Cleared existing data.");
 
-    // First admin is the Super Admin — isSuperAdmin: true
     const superAdmin = await User.create({
       name: "Super Admin",
       email: "admin@finance.com",
@@ -43,7 +42,6 @@ const seed = async () => {
       isSuperAdmin: true,
     });
 
-    // Regular admin — can manage viewers/analysts but NOT other admins
     const regularAdmin = await User.create({
       name: "Regular Admin",
       email: "admin2@finance.com",

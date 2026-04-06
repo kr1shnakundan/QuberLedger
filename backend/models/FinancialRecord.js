@@ -48,7 +48,7 @@ const financialRecordSchema = new mongoose.Schema(
     },
     isDeleted: {
       type: Boolean,
-      default: false, // Soft delete flag
+      default: false,
     },
   },
   {

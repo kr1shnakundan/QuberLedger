@@ -18,7 +18,6 @@ const SUPER_ADMIN_PERMS = [
   "Transfer Super Admin role to another Admin",
 ];
 
-// ─── Avatar component ─────────────────────────────────────────────────────────
 function Avatar({ user, size = "lg", preview = null }) {
   const sizeClasses = {
     sm: "w-9 h-9 text-sm",
@@ -47,7 +46,6 @@ function Avatar({ user, size = "lg", preview = null }) {
   );
 }
 
-// Export so Layout can use it too
 export { Avatar };
 
 export default function ProfilePage() {
@@ -75,7 +73,6 @@ export default function ProfilePage() {
     setName(user?.name || "");
   }, [user?.name]);
 
-  // ── Image selection ───────────────────────────────────────────────────────
   const handleFileSelect = (file) => {
     if (!file) return;
     const allowed = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -97,7 +94,6 @@ export default function ProfilePage() {
     handleFileSelect(e.dataTransfer.files[0]);
   };
 
-  // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     dispatch(clearProfileStatus());
@@ -129,11 +125,9 @@ export default function ProfilePage() {
         <p className="text-slate-500 text-sm mt-0.5">Manage your account details and appearance</p>
       </div>
 
-      {/* ── Edit form ── */}
       <form onSubmit={handleSubmit} className="card space-y-5">
         <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Edit Profile</h3>
 
-        {/* Success */}
         {profileSuccess && (
           <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400
             rounded-xl px-4 py-3 text-sm flex items-center gap-2">
@@ -141,7 +135,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Error */}
+
         {profileError && (
           <div className="bg-red-500/10 border border-red-500/30 text-red-400
             rounded-xl px-4 py-3 text-sm">
@@ -149,9 +143,8 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Avatar + upload area */}
+
         <div className="flex flex-col sm:flex-row items-center gap-10">
-          {/* Preview */}
           <div className="relative shrink-0">
             {imagePreview || user?.profileImage?.url ? (
               <img
@@ -168,7 +161,6 @@ export default function ProfilePage() {
                 {user?.isSuperAdmin ? "👑" : user?.name?.[0]?.toUpperCase()}
               </div>
             )}
-            {/* Camera overlay */}
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}

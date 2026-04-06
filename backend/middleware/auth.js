@@ -11,7 +11,7 @@ const protect = async (req, res, next) => {
   }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id); // isSuperAdmin included by default
+    const user = await User.findById(decoded.id); 
     if (!user) return res.status(401).json({ success: false, message: "Token is no longer valid." });
     if (user.status === "inactive") return res.status(403).json({ success: false, message: "Account is deactivated." });
     req.user = user;

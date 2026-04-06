@@ -6,13 +6,12 @@ const User  = require("../models/User");
 const OTP   = require("../models/OTP");
 const { isBurnerEmail } = require("../utils/burnerDomains");
 const { sendOTPEmail }  = require("../utils/emailService");
+const otpGenerator = require("otp-generator")
  
 
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || "7d" });
  
-const generateOTP = () =>
-  crypto.randomInt(100000, 999999).toString();
  
 const MAX_OTP_ATTEMPTS = 5;
  
@@ -26,8 +25,6 @@ const sendOTP = async (req, res, next) => {
       return res.status(400).json({ success: false, errors: errors.array() });
  
     const email = req.body.email.toLowerCase().trim();
- 
-    // ── Pre-transaction checks (read-only, no need to be inside transaction) ──
  
     if (isBurnerEmail(email)) {
       return res.status(400).json({
@@ -57,23 +54,34 @@ const sendOTP = async (req, res, next) => {
       }
     }
  
-    // ── Transaction: invalidate old OTPs and create new one atomically ────────
     let otp;
  
     await session.withTransaction(async () => {
-      // Delete any previous OTPs for this email inside the transaction
       await OTP.deleteMany({ email }, { session });
- 
-      // Generate and save the new OTP
-      otp = generateOTP();
+
+        otp = otpGenerator.generate(6, {
+            digits: true,
+            upperCaseAlphabets: false,
+            lowerCaseAlphabets: false,
+            specialChars: false,
+        });
+
+        // ensure uniqueness in DB (small chance of collision). Re-query inside loop.
+        let exists = await OTP.findOne({ otp });
+        let attempts = 0;
+        while (exists && attempts < 5) {
+            otp = otpGenerator.generate(6, {
+                digits: true,
+                upperCaseAlphabets: false,
+                lowerCaseAlphabets: false,
+                specialChars: false,
+            });
+            exists = await OTP.findOne({ otp });
+            attempts++;
+        }
       await OTP.create([{ email, otp }], { session });
-      // Note: OTP.create with a session requires an array as the first argument
+      
     });
- 
-    // ── Send email AFTER transaction commits ──────────────────────────────────
-    // Email delivery is outside MongoDB — we send only once the record is
-    // safely committed. If sending fails, the OTP record exists and the user
-    // can request a resend.
     await sendOTPEmail(email, otp);
  
     res.json({
@@ -94,13 +102,7 @@ const sendOTP = async (req, res, next) => {
   }
 };
  
-// ─── Verify OTP ───────────────────────────────────────────────────────────────
-// @route   POST /api/auth/verify-otp
-// @access  Public
-//
-// No transaction needed here — each branch is a single document operation.
-// Incrementing attempts and marking verified are both single atomic saves
-// on the same document, so a transaction would add overhead with no benefit.
+
 const verifyOTP = async (req, res, next) => {
   try {
     const errors = validationResult(req);
@@ -119,7 +121,6 @@ const verifyOTP = async (req, res, next) => {
       });
     }
  
-    // Too many wrong attempts — invalidate and force a resend
     if (record.attempts >= MAX_OTP_ATTEMPTS) {
       await OTP.deleteMany({ email });
       return res.status(400).json({
@@ -128,7 +129,6 @@ const verifyOTP = async (req, res, next) => {
       });
     }
  
-    // Wrong OTP — increment attempt counter
     if (record.otp !== otp.trim()) {
       record.attempts += 1;
       await record.save();
@@ -140,7 +140,6 @@ const verifyOTP = async (req, res, next) => {
       });
     }
  
-    // Correct — mark as verified
     record.verified = true;
     await record.save();
  
@@ -153,15 +152,7 @@ const verifyOTP = async (req, res, next) => {
   }
 };
  
-// ─── Register ─────────────────────────────────────────────────────────────────
-// @route   POST /api/auth/register
-// @access  Public
-//
-// Transaction wraps: User.create + OTP.deleteMany
-// Reason: if the user is created but OTP cleanup fails, the verified OTP
-// record stays in the database. That's inconsistent state — another request
-// could theoretically reuse it. Rolling back the user creation if cleanup
-// fails keeps the database clean and consistent.
+
 const register = async (req, res, next) => {
   const session = await mongoose.startSession();
  
@@ -173,9 +164,7 @@ const register = async (req, res, next) => {
     const { name, password } = req.body;
     const email = req.body.email.toLowerCase().trim();
  
-    // ── Pre-transaction checks ─────────────────────────────────────────────────
- 
-    // Defence-in-depth burner check (also checked at send-otp step)
+    
     if (isBurnerEmail(email)) {
       return res.status(400).json({
         success: false,
@@ -183,7 +172,6 @@ const register = async (req, res, next) => {
       });
     }
  
-    // Must have completed email verification
     const otpRecord = await OTP.findOne({ email, verified: true });
     if (!otpRecord) {
       return res.status(400).json({
@@ -192,7 +180,6 @@ const register = async (req, res, next) => {
       });
     }
  
-    // Duplicate account check
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(409).json({
@@ -201,15 +188,13 @@ const register = async (req, res, next) => {
       });
     }
  
-    // ── Transaction: create user and clean up OTP atomically ──────────────────
     let newUser;
  
     await session.withTransaction(async () => {
-      // Create the user inside the transaction
+
       const created = await User.create([{ name, email, password, role: "viewer" }], { session });
       newUser = created[0];
  
-      // Remove the verified OTP record — it has served its purpose
       await OTP.deleteMany({ email }, { session });
     });
  
@@ -228,13 +213,7 @@ const register = async (req, res, next) => {
   }
 };
  
-// ─── Login ────────────────────────────────────────────────────────────────────
-// @route   POST /api/auth/login
-// @access  Public
-//
-// No transaction needed — updating lastLogin is a single best-effort write.
-// If it fails the user is still authenticated; we use validateBeforeSave: false
-// to avoid running the full schema validation on every login.
+
 const login = async (req, res, next) => {
   try {
     const errors = validationResult(req);
@@ -243,7 +222,6 @@ const login = async (req, res, next) => {
  
     const { email, password } = req.body;
  
-    // password field is select: false — must explicitly request it
     const user = await User.findOne({ email }).select("+password");
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ success: false, message: "Invalid email or password." });
@@ -266,10 +244,6 @@ const login = async (req, res, next) => {
   }
 };
  
-// ─── Get Me ───────────────────────────────────────────────────────────────────
-// @route   GET /api/auth/me
-// @access  Private
-//
 // req.user is already populated by the protect middleware — no DB call needed.
 const getMe = (req, res) => {
   res.json({ success: true, user: req.user });

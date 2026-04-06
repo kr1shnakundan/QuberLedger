@@ -1,8 +1,6 @@
 const FinancialRecord = require("../models/FinancialRecord");
 
-// @desc    Get overall summary (totals, net balance)
-// @route   GET /api/dashboard/summary
-// @access  Viewer, Analyst, Admin
+//Get overall summary (totals, net balance)
 const getSummary = async (req, res, next) => {
   try {
     const result = await FinancialRecord.aggregate([
@@ -40,9 +38,7 @@ const getSummary = async (req, res, next) => {
   }
 };
 
-// @desc    Get category-wise totals
-// @route   GET /api/dashboard/by-category
-// @access  Analyst, Admin
+// Get category-wise totals
 const getByCategory = async (req, res, next) => {
   try {
     const filter = { isDeleted: false };
@@ -75,9 +71,7 @@ const getByCategory = async (req, res, next) => {
   }
 };
 
-// @desc    Get monthly/weekly trends
-// @route   GET /api/dashboard/trends
-// @access  Analyst, Admin
+//  Get monthly/weekly trends
 const getTrends = async (req, res, next) => {
   try {
     const months = parseInt(req.query.months) || 6;
@@ -115,7 +109,6 @@ const getTrends = async (req, res, next) => {
       },
     ]);
 
-    // Transform into a unified structure: [{month, income, expense}]
     const monthMap = {};
     data.forEach(({ year, month, type, total }) => {
       const key = `${year}-${String(month).padStart(2, "0")}`;
@@ -129,9 +122,7 @@ const getTrends = async (req, res, next) => {
   }
 };
 
-// @desc    Get recent transactions
-// @route   GET /api/dashboard/recent
-// @access  Viewer, Analyst, Admin
+//Get recent transactions
 const getRecent = async (req, res, next) => {
   try {
     const limit = parseInt(req.query.limit) || 5;
@@ -146,9 +137,7 @@ const getRecent = async (req, res, next) => {
   }
 };
 
-// @desc    Get full dashboard data in one request
-// @route   GET /api/dashboard
-// @access  Viewer, Analyst, Admin
+// Get full dashboard data in one request
 const getDashboard = async (req, res, next) => {
   try {
     const months = 6;

@@ -1,11 +1,7 @@
 const nodemailer = require("nodemailer");
 
-// ─── Transporter ──────────────────────────────────────────────────────────────
-// Supports any SMTP provider. For Gmail, use an App Password (not your account password).
-// For development/testing, set EMAIL_PROVIDER=ethereal to use a free catch-all inbox.
 const createTransporter = () => {
   if (process.env.EMAIL_PROVIDER === "ethereal") {
-    // Auto-configured ethereal — logs preview URL to console, no real email sent
     return nodemailer.createTransport({
       host: "smtp.ethereal.email",
       port: 587,
@@ -16,8 +12,6 @@ const createTransporter = () => {
       },
     });
   }
-
-  // Production SMTP (Gmail, SendGrid, Mailgun, etc.)
   return nodemailer.createTransport({
     host:   process.env.SMTP_HOST,
     port:   parseInt(process.env.SMTP_PORT) || 587,
@@ -29,7 +23,6 @@ const createTransporter = () => {
   });
 };
 
-// ─── OTP Email Template ───────────────────────────────────────────────────────
 const otpEmailTemplate = (otp, expiresInMinutes = 10) => `
 <!DOCTYPE html>
 <html>
@@ -125,7 +118,6 @@ const sendOTPEmail = async (toEmail, otp) => {
 
   const info = await transporter.sendMail(mailOptions);
 
-  // In development with Ethereal, log the preview URL
   if (process.env.EMAIL_PROVIDER === "ethereal") {
     console.log(`📧 OTP Email Preview: ${nodemailer.getTestMessageUrl(info)}`);
   }
@@ -133,8 +125,6 @@ const sendOTPEmail = async (toEmail, otp) => {
   return info;
 };
 
-// ─── Setup Ethereal (dev helper) ──────────────────────────────────────────────
-// Call once on startup in dev mode to get test credentials automatically
 const setupEtherealAccount = async () => {
   if (process.env.EMAIL_PROVIDER !== "ethereal") return;
   if (process.env.ETHEREAL_USER && process.env.ETHEREAL_PASS) return;

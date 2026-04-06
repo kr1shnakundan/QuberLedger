@@ -1,6 +1,6 @@
 const FinancialRecord = require("../models/FinancialRecord");
 
-// ─── Category → Bucket Mapping ────────────────────────────────────────────────
+// Bucket Mapping
 // Based on 50/30/20 rule:
 //   Needs   (50%) — essential living expenses
 //   Wants   (30%) — lifestyle / discretionary
@@ -23,7 +23,7 @@ const BUCKET_MAP = {
   other:         "wants",
   // SAVINGS
   savings:       "savings",
-  investment:    "savings",  // expense-side investment (e.g. SIP, recurring deposit)
+  investment:    "savings",  
 };
 
 // Ideal 50/30/20 targets (as fraction of total expenses)
@@ -31,14 +31,14 @@ const TARGETS = { needs: 0.50, wants: 0.30, savings: 0.20 };
 
 // Alert thresholds
 const ALERTS_CONFIG = {
-  wantsIncomeRatio:    0.35,   // Wants > 35% of monthly income → warning
-  wantsCritical:       0.50,   // Wants > 50% of monthly income → critical
-  categoryGrowthWarn:  0.20,   // Category grew > 20% MoM → highlight
-  categoryGrowthAlert: 0.50,   // Category grew > 50% MoM → alert
-  needsUnderTarget:    0.40,   // Needs < 40% of expenses → suspicious under-reporting
+  wantsIncomeRatio:    0.35,   
+  wantsCritical:       0.50,   
+  categoryGrowthWarn:  0.20,   
+  categoryGrowthAlert: 0.50,   
+  needsUnderTarget:    0.40,   
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helper
 const monthKey = (year, month) => `${year}-${String(month).padStart(2, "0")}`;
 
 const pct = (num, denom) => (denom === 0 ? 0 : +((num / denom) * 100).toFixed(1));
@@ -46,9 +46,7 @@ const pct = (num, denom) => (denom === 0 ? 0 : +((num / denom) * 100).toFixed(1)
 const growthRate = (prev, curr) =>
   prev === 0 ? (curr > 0 ? 100 : 0) : +((((curr - prev) / prev) * 100).toFixed(1));
 
-// @desc    Full categorical analysis
-// @route   GET /api/dashboard/categorical-analysis
-// @access  Analyst, Admin
+//Full categorical analysis
 const getCategoricalAnalysis = async (req, res, next) => {
   try {
     const months = parseInt(req.query.months) || 6;
@@ -57,7 +55,6 @@ const getCategoricalAnalysis = async (req, res, next) => {
     startDate.setDate(1);
     startDate.setHours(0, 0, 0, 0);
 
-    // ── 1. All expense records in window ──────────────────────────────────────
     const expenseByMonthCategory = await FinancialRecord.aggregate([
       {
         $match: {
@@ -80,7 +77,6 @@ const getCategoricalAnalysis = async (req, res, next) => {
       { $sort: { "_id.year": 1, "_id.month": 1 } },
     ]);
 
-    // ── 2. Monthly income for ratio calculations ───────────────────────────────
     const incomeByMonth = await FinancialRecord.aggregate([
       {
         $match: {
@@ -102,8 +98,8 @@ const getCategoricalAnalysis = async (req, res, next) => {
       incomeMap[monthKey(_id.year, _id.month)] = total;
     });
 
-    // ── 3. Build per-month bucket totals ──────────────────────────────────────
-    // Structure: { "2024-03": { needs: X, wants: X, savings: X, total: X, categories: {...} } }
+    //Build per-month bucket totals
+
     const monthlyData = {};
 
     expenseByMonthCategory.forEach(({ _id, total }) => {
@@ -133,7 +129,7 @@ const getCategoricalAnalysis = async (req, res, next) => {
       a.period.localeCompare(b.period)
     );
 
-    // ── 4. Enrich each month with ratios + income ──────────────────────────────
+    // Enrich each month with ratios + income
     const enriched = sortedMonths.map((m) => {
       const income = incomeMap[m.period] || 0;
       return {
@@ -142,14 +138,14 @@ const getCategoricalAnalysis = async (req, res, next) => {
         needsPct:   pct(m.needs,   m.total),
         wantsPct:   pct(m.wants,   m.total),
         savingsPct: pct(m.savings, m.total),
-        // vs income (for 50/30/20 against gross income)
+        
         needsVsIncome:   pct(m.needs,   income),
         wantsVsIncome:   pct(m.wants,   income),
         savingsVsIncome: pct(m.savings, income),
       };
     });
 
-    // ── 5. Category growth analysis (MoM for each category) ───────────────────
+    //Category growth analysis (MoM for each category
     const allCategories = [
       ...new Set(expenseByMonthCategory.map((r) => r._id.category)),
     ];
@@ -160,7 +156,7 @@ const getCategoricalAnalysis = async (req, res, next) => {
         amount: m.categories[cat] || 0,
       }));
 
-      // Compute MoM growth rates
+      //Compute MoM growth rates
       const growthRates = monthlyAmounts.slice(1).map((curr, i) => ({
         period:     curr.period,
         amount:     curr.amount,
@@ -197,7 +193,7 @@ const getCategoricalAnalysis = async (req, res, next) => {
     // Sort by latest amount descending
     categoryTrends.sort((a, b) => b.latestAmount - a.latestAmount);
 
-    // ── 6. Overall summary (all-time in window) ────────────────────────────────
+  
     const totalNeeds   = enriched.reduce((s, m) => s + m.needs,   0);
     const totalWants   = enriched.reduce((s, m) => s + m.wants,   0);
     const totalSavings = enriched.reduce((s, m) => s + m.savings, 0);
@@ -210,16 +206,15 @@ const getCategoricalAnalysis = async (req, res, next) => {
       totalSavings, savingsPct: pct(totalSavings, totalExpense),   savingsTarget: 20,
       totalExpense,
       totalIncome,
-      // 50/30/20 compliance (vs income)
+     
       needsVsIncome:   pct(totalNeeds,   totalIncome),
       wantsVsIncome:   pct(totalWants,   totalIncome),
       savingsVsIncome: pct(totalSavings, totalIncome),
     };
 
-    // ── 7. Alert generation ────────────────────────────────────────────────────
+    //Alert generation
     const alerts = [];
 
-    // Per-month want ratio alerts
     enriched.forEach((m) => {
       if (m.income > 0) {
         const ratio = m.wants / m.income;

@@ -103,13 +103,13 @@ export default function Layout() {
             <>
               <p className={`px-3 mt-4 mb-2 font-pixel text-[7px] tracking-widest
                 ${isDark ? "text-slate-700" : "text-slate-400"}`}>ANALYTICS</p>
-              <NavItem to="/categorical" icon="◉" label="50/30/20 Rule" />
+              <NavItem to="/categorical" icon="◉" label="Categorical Analysis" />
             </>
           )}
 
           {user?.role === "admin" && (
             <>
-              <p className={`px-3 mt-4 mb-2 font-pixel text-[7px] tracking-widest
+              <p className={`px-3 mt-2 mb-2 font-pixel text-[7px] tracking-widest
                 ${isDark ? "text-slate-700" : "text-slate-400"}`}>ADMIN</p>
               <NavItem to="/users" icon="⊞" label="Users" />
             </>

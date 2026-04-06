@@ -38,10 +38,9 @@ const userSchema = new mongoose.Schema(
       enum:    ["active", "inactive"],
       default: "active",
     },
-    // Profile image stored on Cloudinary
     profileImage: {
       url:      { type: String, default: "" },
-      publicId: { type: String, default: "" }, // For deletion/replacement
+      publicId: { type: String, default: "" },
     },
     lastLogin: {
       type:    Date,
@@ -51,7 +50,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Enforce single super admin
 userSchema.pre("save", async function (next) {
   if (this.isModified("isSuperAdmin") && this.isSuperAdmin) {
     const existing = await this.constructor.findOne({ isSuperAdmin: true, _id: { $ne: this._id } });
@@ -60,7 +58,6 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// Hash password
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(12);
