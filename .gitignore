@@ -68,3 +68,5 @@ desktop.ini
 /tmp/
 uploads/
 *.tmp
+
+backend/utils/seed.js

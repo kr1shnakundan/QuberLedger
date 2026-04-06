@@ -38,7 +38,7 @@ const seed = async () => {
     const superAdmin = await User.create({
       name: "Super Admin",
       email: "admin@finance.com",
-      password: "adminsuper_123",
+      password: 'admin_pass1',
       role: "admin",
       isSuperAdmin: true,
     });
@@ -47,24 +47,19 @@ const seed = async () => {
     const regularAdmin = await User.create({
       name: "Regular Admin",
       email: "admin2@finance.com",
-      password: "admin123",
+      password: 'admin_pas2',
       role: "admin",
       isSuperAdmin: false,
     });
 
-    await User.create({ name: "Alice Analyst", email: "analyst@finance.com", password: "analyst123", role: "analyst" });
-    await User.create({ name: "Bob Viewer",    email: "viewer@finance.com",  password: "viewer123",  role: "viewer"  });
+    await User.create({ name: "Alice Analyst", email: "analyst@finance.com", password: "analyst_pass", role: "analyst" });
+    await User.create({ name: "Bob Viewer",    email: "viewer@finance.com",  password: "viewer_pass",  role: "viewer"  });
 
     console.log("✅ Created 4 demo users.");
 
     const records = generateRecords(superAdmin._id);
     await FinancialRecord.insertMany(records);
     console.log(`✅ Created ${records.length} financial records.`);
-
-    console.log("\n🎉 Seed complete! Demo credentials:");
-    console.log("   Regular Admin: admin2@finance.com   / admin123   (cannot edit other admins)");
-    console.log("   Analyst:       analyst@finance.com  / analyst123");
-    console.log("   Viewer:        viewer@finance.com   / viewer123\n");
 
     process.exit(0);
   } catch (err) {

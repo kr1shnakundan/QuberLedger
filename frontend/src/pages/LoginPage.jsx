@@ -4,12 +4,13 @@ import { useNavigate, Link } from "react-router-dom";
 import { loginUser, clearError } from "../store/authSlice.js";
 import { useTheme } from "../hooks/useTheme.js";
 import logo from "../assets/logo-alt.png";
+require("dotenv").config();
 
 
 const DEMO = {
-  admin:   { email: "admin@finance.com",   password: "admin123"   },
-  analyst: { email: "analyst@finance.com", password: "analyst123" },
-  viewer:  { email: "viewer@finance.com",  password: "viewer123"  },
+  admin:   { email: "admin2@finance.com",   password: process.env.REACT_APP_ADMIN_PASS   },
+  analyst: { email: "analyst@finance.com", password: process.env.REACT_APP_ANALYST_PASS },
+  viewer:  { email: "viewer@finance.com",  password: process.env.REACT_APP_VIEWER_PASS  },
 };
 
 export default function LoginPage() {
