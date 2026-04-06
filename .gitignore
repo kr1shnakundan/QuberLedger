@@ -1,0 +1,70 @@
+# Environment variables (ALL LOCATIONS)
+.env
+**/.env
+.env.local
+.env.*.local
+**/.env.local
+**/.env.*.local
+
+# BUT allow .env.example files
+!.env.example
+!**/.env.example
+
+# Dependencies (ALL LOCATIONS)
+node_modules/
+**/node_modules/
+
+# Lock files (ALL LOCATIONS)
+package-lock.json
+**/package-lock.json
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+
+# OS files
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+**/*.log
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+ 
+
+
+.vite/
+frontend/dist/
+frontend/.vite/
+
+.cache/
+.parcel-cache/
+ 
+
+.pnp
+.pnp.js
+
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+/tmp/
+uploads/
+*.tmp

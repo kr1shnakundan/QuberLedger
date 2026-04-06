@@ -1,0 +1,18 @@
+{
+  "name": "finance-dashboard",
+  "version": "1.0.0",
+  "description": "Finance Dashboard — root workspace runner",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "seed": "cd backend && npm run seed",
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"green,blue\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build"
+  },
+  "private": true,
+  "dependencies": {
+    "cloudinary": "^2.9.0",
+    "concurrently": "^9.2.1"
+  }
+}
